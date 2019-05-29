@@ -47,8 +47,7 @@ def main():
     parser = argparse.ArgumentParser()
     parser.add_argument("-r", "--random_seed", default=527, type=int,
                         help="initial random seed of first process "
-                             "(i'th process starts with seed random_seed+i)",
-                        type=str)
+                             "(i'th process starts with seed random_seed+i)")
     parser.add_argument("-l", "--link_function", default="step",
                         help="link function to use with data model (available"
                              " options are: step, exp, cubic, linear)",
