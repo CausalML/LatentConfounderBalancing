@@ -56,7 +56,12 @@ def main():
                         help="number of repetitions")
     parser.add_argument("-p", "--num_procs", default=1, type=int,
                         help="number of parallel processes")
-    parser.add_argument()
+    parser.add_argument("-d", "--num_data_range", default="2000,1000,500,200",
+                        help="range of num data values")
+    parser.add_argument("-m", "--sigma_mul_range", default="0.001,0.2,1.0,5.0",
+                        help="range of sigma matrix multipliers to test")
+    parser.add_argument("save_path", help="path to save results '.csv' file to")
+    # parser.add_argument()
     args = parser.parse_args()
 
     num_treatment = 2
@@ -76,10 +81,13 @@ def main():
     kernel = "rbf"
     policy = toy_continuous_policy
     num_data_policy_estimate = 1000000
-    num_data_range = (2000, 1000, 500, 200)
-    save_dir = "results"
-    os.makedirs(save_dir, exist_ok=True)
-    save_path = os.path.join(save_dir, "%s_results.csv" % args.link_function)
+    # num_data_range = (2000, 1000, 500, 200)
+    num_data_range = tuple([int(n) for n in args.num_data_range.split(",")])
+    sigma_mul_range = tuple([float(n) for n in args.sigma_mul_range.split(",")])
+    save_path = args.save_path
+    save_dir = os.path.dirname(save_path)
+    if save_dir:
+        os.makedirs(save_dir, exist_ok=True)
 
     job_queue = Queue()
     results_queue = Queue()
@@ -91,7 +99,7 @@ def main():
             job_queue.put((num_data, rep))
 
     procs = []
-    for p_i in range(args.num_proces):
+    for p_i in range(args.num_procs):
         job_queue.put("STOP")
         config = {
             "num_treatment": num_treatment,
@@ -101,6 +109,7 @@ def main():
             "policy": policy,
             "link_function": args.link_function,
             "seed": args.random_seed + p_i,
+            "sigma_mul_range": sigma_mul_range,
         }
         p_args = (job_queue, results_queue, config)
         p = Process(target=worker_loop, args=p_args)
@@ -160,6 +169,7 @@ def worker_loop(job_queue, results_queue, config):
     policy = config["policy"]
     link_function = config["link_function"]
     seed = config["seed"]
+    sigma_mul_range = config["sigma_mul_range"]
 
     random.seed(seed)
     np.random.seed(seed)
@@ -194,7 +204,7 @@ def worker_loop(job_queue, results_queue, config):
         learning = BalancedWeightsLearningContinuousQuadprog(
             num_data, num_treatment, data_model, kernel)
         learning.update_policy(policy)
-        for sigma_mul in (0.001, 0.2, 1.0, 5.0):
+        for sigma_mul in sigma_mul_range:
             sigma = np.ones(num_data) * sigma_mul
             w = learning.train(x, t, y, verbose=True, normalized_weights=False,
                                z_sample=z_sample, sigma=sigma,
@@ -277,5 +287,4 @@ def worker_loop(job_queue, results_queue, config):
 
 if __name__ == "__main__":
     main()
-
 

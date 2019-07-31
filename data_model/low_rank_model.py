@@ -104,7 +104,7 @@ class LowRankModel(AbstractDataModel):
 
     def _sample_z_stan(self, x, t, num_iter=1000, chains=2, warmup=500, thin=1):
         if self.stan_model is None:
-            self.stan_model = pystan.StanModel("continuous_model.stan")
+            self.stan_model = pystan.StanModel("stan_models/continuous_model.stan")
         standata = {
             "N": x.shape[0], "Z": self.dim_z, "X": self.dim_x, "T": self.num_t,
             "R": self.v.T, "R_0": self.v_0, "std_x": self.std_x,
